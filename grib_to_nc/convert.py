@@ -15,7 +15,7 @@ from .settings import GTCSettings as GTCS
 
 class GTCConvert(GR, GTCS):
 
-    def __init__(self, verbose):
+    def __init__(self, verbose=True):
 
         GR.__init__(self, verbose)
         GTCS.__init__(self, verbose)

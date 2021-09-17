@@ -35,7 +35,7 @@ class GRead:
     _grib_time_refs = (
         'UTC')
 
-    def __init__(self, verbose):
+    def __init__(self, verbose=True):
 
         assert isinstance(verbose, bool)
 
