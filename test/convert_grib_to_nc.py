@@ -32,6 +32,9 @@ def main():
     nc_calendar = 'gregorian'
     nc_units = 'hours since 1995-01-01 00:00:00.0'
 
+    overwrite_flag = False
+    #==========================================================================
+
     cnvt_cls = GTCConvert(True)
 
     cnvt_cls.set_path_to_grib(path_to_grib)
@@ -45,7 +48,7 @@ def main():
     cnvt_cls.read_grib()
     cnvt_cls.close_grib()
 
-    cnvt_cls.convert_to_nc()
+    cnvt_cls.convert_to_nc(overwrite_flag)
     return
 
 

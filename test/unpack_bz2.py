@@ -26,9 +26,12 @@ def main():
     path_to_input = Path(r'TOT_PRECIP.2D.199501.grb.bz2')
     path_to_output = path_to_input.with_suffix('')
 
+    overwrite_flag = False
+    #==========================================================================
+
     unpack_cls = GUnpack()
 
-    unpack_cls.unpack_bz2(path_to_input, path_to_output)
+    unpack_cls.unpack_bz2(path_to_input, path_to_output, overwrite_flag)
     return
 
 

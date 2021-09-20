@@ -32,11 +32,29 @@ class GTCConvert(GR, GTCS):
         self._gtcc_verify_flag = True
         return
 
-    def convert_to_nc(self):
+    def convert_to_nc(self, overwrite_flag=False):
 
         assert self._gread_read_flag
         assert self._sett_verify_flag
         assert self._gtcc_verify_flag
+
+        assert isinstance(overwrite_flag, bool)
+        #======================================================================
+
+        # Used to determine if the file was converted correctly.
+        temp_file_path = self._sett_path_to_nc.parents[0] / (
+            f'{self._sett_path_to_nc.name}.tmp')
+
+        if temp_file_path.exists():
+            overwrite_flag = True
+
+        else:
+            open(temp_file_path, 'w')
+
+        if (not overwrite_flag) and self._sett_path_to_nc.exists():
+
+            temp_file_path.unlink()
+            return
         #======================================================================
 
         nc_hdl = nc.Dataset(str(self._sett_path_to_nc), mode='w')
@@ -151,6 +169,9 @@ class GTCConvert(GR, GTCS):
 
         nc_hdl.Source = str(self._gread_path_to_grib)
         nc_hdl.close()
+        #======================================================================
+
+        temp_file_path.unlink()
         return
 
     def _get_crnr_tfmd_crds(self):

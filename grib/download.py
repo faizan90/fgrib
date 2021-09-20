@@ -5,7 +5,6 @@ Sep 17, 2021
 
 8:32:59 AM
 '''
-import os
 from pathlib import Path
 from fnmatch import fnmatch
 
@@ -70,7 +69,6 @@ class GDownload:
         # Used to determine if the file was download and written to
         # completely.
         temp_file_path = download_dir / f'{name}.tmp'
-#
 
         if temp_file_path.exists():
             overwrite_flag = True
@@ -82,5 +80,5 @@ class GDownload:
             req_cont = requests.get(f'{url}{name}', allow_redirects=True)
             open(out_file_path, 'wb').write(req_cont.content)
 
-        os.remove(temp_file_path)
+        temp_file_path.unlink()
         return

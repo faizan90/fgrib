@@ -41,7 +41,7 @@ def main():
     print(grib_names[:3])
 
     for name in grib_names[:3]:
-        down_cls.download_file(grib_url, name, main_dir, overwrite_flag)
+        down_cls.download_file(grib_url, name, out_dir, overwrite_flag)
 
     return
 
