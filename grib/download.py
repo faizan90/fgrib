@@ -14,9 +14,23 @@ from bs4 import BeautifulSoup as bs
 
 class GDownload:
 
+    '''
+    Simple facilities to list and download files from a website.
+
+    1. List all files with a given extension for a given URL.
+    2. Download a given file at a given URL.
+
+    The URLs are supposed to have simple listings of files. I think it won't
+    work on those fancy websites where files are shown inside widgets or
+    something.
+
+    Last updated on: 2021-Sep-21
+    '''
+
     def __init__(self, verbose=True):
 
-        assert isinstance(verbose, bool)
+        assert isinstance(verbose, bool), (
+            f'verbose not of the data type boolean!')
 
         self._vb = True
 
@@ -24,12 +38,32 @@ class GDownload:
 
     def get_all_names(self, url, ext):
 
-        assert isinstance(url, str)
-        assert len(url)
-        assert url[-1] == '/'
+        '''
+        Get names of all files at a given URL with a specified extenion as
+        a list. An AssertionError is raised if no files are found at the end.
 
-        assert isinstance(ext, str)
-        assert len(ext)
+        Parameters
+        ----------
+        url : str
+            The URL at which to look for files. Must be a string and end with
+            a "/".
+        ext : str
+            The extension/ending that the file names should have.
+
+        Returns
+        -------
+        List of all the names.
+        '''
+
+        assert isinstance(url, str), f'url not of the string data type!'
+
+        assert len(url), f'Empty url!'
+
+        assert url[-1] == '/', f'url not ending with a "/"!'
+
+        assert isinstance(ext, str), f'ext not of the data type string!'
+
+        assert len(ext), f'Empty ext!'
 
         soup = bs(requests.get(url).text, features='html.parser')
 
@@ -44,29 +78,64 @@ class GDownload:
 
             names.append(name)
 
+        assert len(names), (
+            f'Could not find any names with the extension {ext} at {url}!')
+
         return names
 
     def download_file(self, url, name, download_dir, overwrite_flag=False):
 
-        assert isinstance(url, str)
-        assert len(url)
-        assert url[-1] == '/'
+        '''
+        Download a file from a given URL with a check to see if the previous
+        attempts to download, if any, were successful. It could happen
+        that a file was partially download. If so, it is redownloaded.
+        This is done by having a temporary file created before download
+        and deleted afterwards if the download was successful.
 
-        assert isinstance(name, str)
-        assert len(name)
+        Parameters
+        ----------
+        url : str
+            The url where the file exists. This should not include the file
+            name. Should be of the string data type and end with a "/".
+        name : str
+            The name of the file to download. Should be of the string data
+            type. An error is raised by the requests module if the file
+            is not found.
+        download_dir : str or Path
+            Local location of the directory inside which to save the file.
+            Can be of string or Path data type. Should exist.
+        overwrite_flag : bool
+            Whether to overwrite the file or not if it exists. If False and
+            the file does exist then no it is not downloaded.
+            If the file download was unsuccessful the last time then it
+            is overwritten regardless.
+        '''
 
-        assert isinstance(download_dir, (str, Path))
+        assert isinstance(url, str), f'url not of the data type string!'
+
+        assert len(url), f'Empty url string!'
+
+        assert url[-1] == '/', f'url not ending with a "/"!'
+
+        assert isinstance(name, str), 'name not of the data type string!'
+
+        assert len(name), 'Empty name string!'
+
+        assert isinstance(download_dir, (str, Path)), (
+            f'download_dir not of the data type string or Path!')
 
         download_dir = Path(download_dir)
 
-        assert download_dir.exists()
-        assert download_dir.is_dir()
+        assert download_dir.exists(), f'download_dir does not exist!'
 
-        assert isinstance(overwrite_flag, bool)
+        assert download_dir.is_dir(), f'download_dir is not a directory!'
+
+        assert isinstance(overwrite_flag, bool), (
+            f'overwrite_flag not of the boolean data type!')
 
         out_file_path = download_dir / name
 
-        # Used to determine if the file was download and written to
+        # Used to determine if the file was downloaded and written to
         # completely.
         temp_file_path = download_dir / f'{name}.tmp'
 

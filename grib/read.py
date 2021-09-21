@@ -32,37 +32,48 @@ _RasProps = namedtuple(
 class GRead:
 
     '''
-    Read a GRIB file using GDAL. Supported versions depend on whatever GDAL
-    supports.
+    Read a GRIB file using GDAL. Supported GRIB versions depend on
+    whatever GDAL supports.
 
     Note
     ----
     Currently the time strings in metadata for each band are supposed to
     have time units of seconds (sec) with no time zone i.e. UTC only.
-    I didin't have any files at the time to take into account what other time
-    representations look like.
+    I didn't have any files at the time to take into account what other time
+    representations may look like.
+
+    Also, reinitiate the class if some of the "get" methods are mistakenly
+    called multiple times in an interactive interpreter. I made the code
+    to run in a non-interactive interpreter.
+
+    Take a look in the "test" directory of the library to see a practical
+    example.
 
     Description
     -----------
-    Only path to a valid GRIB file is needed. See the rest of the documentation
-    for use.
+    Only path to a valid GRIB file is needed. See the rest of the
+    documentation (all methods) for more details as well.
 
     How-To-Use
     ----------
     After initiating a GRead object (gread_cls = GRead(verbose_flag)),
     set the path to the GRIB file by calling set_poth_to_grib method.
     Call verify to see if all the required conditions are met. Without a call
-    to verify, file cannot be read. Call read_grib and then close_grib.
+    to verify, the file cannot be read. Call read_grib and then close_grib.
     Closing can be done after reading as all the relevant data is loaded
-    to RAM. Any required variable can then be had by calling any of the
+    in to RAM. Any required variable can then be had by calling any of the
     get_* methods. See the documentation of each method for the format.
+
+    Last updated on: 2021-Sep-21
     '''
 
     _grib_time_units = (
-        'sec')
+        'sec',
+        )
 
     _grib_time_refs = (
-        'UTC')
+        'UTC',
+        )
 
     def __init__(self, verbose=True):
 
@@ -97,13 +108,13 @@ class GRead:
         Parameters
         ----------
         path_to_grib : str, Path
-        Path to the GRIB file. Must be of valid data type and exist.
-        Whether it is a valid GRIB file or not is not checked here. This
-        is done once read_grib is called.
+            Path to the GRIB file. Must be of valid data type and exist.
+            Whether it is a valid GRIB file or not is not checked here. This
+            is done once read_grib is called.
         '''
 
         assert isinstance(path_to_grib, (str, Path)), (
-            f'Invalid data type of path_to_grib: type(path_to_grib)!')
+            f'Invalid data type of path_to_grib: type({path_to_grib})!')
 
         path_to_grib = Path(path_to_grib)
 
@@ -134,7 +145,7 @@ class GRead:
         assert grib_hdl is not None, (
             f'Could not open file: {self._gread_path_to_grib} using GDAL!')
 
-        raise Exception('Check if it is GRIB or not!')
+        raise Exception('Check if it is a GRIB driver or not!')
 
         self._gread_handle = grib_hdl
         #======================================================================
@@ -213,10 +224,10 @@ class GRead:
                 f'Could not parse: {ref_time_str} to get time!')
 
             assert parse_res['unit'] in self._grib_time_units, (
-                f'The key "unit" not in parse!')
+                f'The key "unit" is not in parse!')
 
             assert parse_res['ref'] in self._grib_time_refs, (
-                f'The key "ref" not in parse!')
+                f'The key "ref" is not in parse!')
 
             band_time = datetime.utcfromtimestamp(parse_res['time'])
 
@@ -232,7 +243,7 @@ class GRead:
 
         self._gread_meta_data = tuple(meta_data)
         self._gread_time_stamps = tuple(time_stamps)
-        self._gread_data = tuple(data)
+        self._gread_data = data
 
         self._gread_dtype = self._gread_data[0].dtype
 
@@ -253,13 +264,31 @@ class GRead:
         '''
         Returns
         -------
-        NOTE: Works only if a call to read_grib is made before.
+        The spatial properties of the GRIB raster as a namedtuple.
+        These are the raw values from the file. No transformation is
+        applied at this stage.
+        The tuple has the following attributes:
+        1. x_min: The minimum x-coordinate.
+        2. x_max: The maximum x-coordinate.
+        3. y_min: The minimum y-coordinate.
+        4. y_max: The maximum y-coordinate.
+        5. n_cols: The number of columns of the raster for each time step.
+        6. n_rows: The number of rows of the raster for each time step.
+        7. cell_width: Width of cell in original coordinate system.
+        8. cell_height: Width of cell in original coordinates system.
+        9. proj: The projection data returned GetProjectionRef().
+        10. band_count: The number of time steps.
+
+        Note: Works only if a call to read_grib is made before.
         '''
 
         assert self._gread_read_flag, f'Call read_grib first!'
 
         assert self._gread_sp_props_orig is not None, (
             f'Required attribute (self._gread_sp_props_orig) not set!')
+
+        assert isinstance(self._gread_sp_props_orig, _RasProps), (
+            f'Expected the object to be of _RasProps type!')
 
         return self._gread_sp_props_orig
 
@@ -268,13 +297,18 @@ class GRead:
         '''
         Returns
         -------
-        NOTE: Works only if a call to read_grib is made before.
+        Shape of the GRIB grid as a tuple.
+
+        Note: Works only if a call to read_grib is made before.
         '''
 
         assert self._gread_read_flag, f'Call read_grib first!'
 
         assert self._gread_grid_shape is not None, (
             f'Required attribute (self._gread_grid_shape) not set!')
+
+        assert isinstance(self._gread_grid_shape, tuple), (
+            f'Required attribute not a tuple!')
 
         return self._gread_grid_shape
 
@@ -283,13 +317,19 @@ class GRead:
         '''
         Returns
         -------
-        NOTE: Works only if a call to read_grib is made before.
+        The coordinates system of the GRIB file as a WKT string.
+        This is needed to reproject the coordinates to another system later.
+
+        Note: Works only if a call to read_grib is made before.
         '''
 
         assert self._gread_read_flag, f'Call read_grib first!'
 
         assert self._gread_crs is not None, (
             f'Required attribute (self._gread_crs) not set!')
+
+        assert isinstance(self._gread_crs, str), (
+            f'Required attribute not a string!')
 
         return self._gread_crs
 
@@ -298,13 +338,20 @@ class GRead:
         '''
         Returns
         -------
-        NOTE: Works only if a call to read_grib is made before.
+        The coordinates of each cell corner in the horizontal direction in
+        the GRIB coordinate system as an array. The number of the
+        coordinates is one more than the number of rows of the grid.
+
+        Note: Works only if a call to read_grib is made before.
         '''
 
         assert self._gread_read_flag, f'Call read_grib first!'
 
         assert self._gread_x_crds_crnrs is not None, (
             f'Required attribute (self._gread_x_crds_crnrs) not set!')
+
+        assert isinstance(self._gread_x_crds_crnrs, np.ndarray), (
+            f'Required attribute not a np.ndarray!')
 
         return self._gread_x_crds_crnrs
 
@@ -313,13 +360,20 @@ class GRead:
         '''
         Returns
         -------
-        NOTE: Works only if a call to read_grib is made before.
+        The coordinates of each cell corner in the vertical direction in
+        the GRIB coordinate system as an array. The number of the
+        coordinates is one more than the number of columns of the grid.
+
+        Note: Works only if a call to read_grib is made before.
         '''
 
         assert self._gread_read_flag, f'Call read_grib first!'
 
         assert self._gread_y_crds_crnrs is not None, (
             f'Required attribute (self._gread_y_crds_crnrs) not set!')
+
+        assert isinstance(self._gread_y_crds_crnrs, np.ndarray), (
+            f'Required attribute not a np.ndarray!')
 
         return self._gread_y_crds_crnrs
 
@@ -328,13 +382,20 @@ class GRead:
         '''
         Returns
         -------
-        NOTE: Works only if a call to read_grib is made before.
+        The coordinates of each cell center in the horizontal direction in
+        the GRIB coordinate system as an array. The number of the
+        coordinates is equal to the number of rows of the grid.
+
+        Note: Works only if a call to read_grib is made before.
         '''
 
         assert self._gread_read_flag, f'Call read_grib first!'
 
         assert self._gread_x_crds_cntrs is not None, (
             f'Required attribute (self._gread_x_crds_cntrs) not set!')
+
+        assert isinstance(self._gread_x_crds_cntrs, np.ndarray), (
+            f'Required attribute not a np.ndarray!')
 
         return self._gread_x_crds_cntrs
 
@@ -343,13 +404,20 @@ class GRead:
         '''
         Returns
         -------
-        NOTE: Works only if a call to read_grib is made before.
+        The coordinates of each cell center in the vertical direction in
+        the GRIB coordinate system as an array. The number of the
+        coordinates is equal to the number of columns of the grid.
+
+        Note: Works only if a call to read_grib is made before.
         '''
 
         assert self._gread_read_flag, f'Call read_grib first!'
 
         assert self._gread_y_crds_cntrs is not None, (
             f'Required attribute (self._gread_y_crds_cntrs) not set!')
+
+        assert isinstance(self._gread_y_crds_cntrs, np.ndarray), (
+            f'Required attribute not a np.ndarray!')
 
         return self._gread_y_crds_cntrs
 
@@ -358,13 +426,19 @@ class GRead:
         '''
         Returns
         -------
-        NOTE: Works only if a call to read_grib is made before.
+        Metadata extracted for each time step as a tuple. The correspondance
+        is one-to-one for a grid at each time step.
+
+        Note: Works only if a call to read_grib is made before.
         '''
 
         assert self._gread_read_flag, f'Call read_grib first!'
 
         assert self._gread_meta_data is not None, (
             f'Required attribute (self._gread_meta_data) not set!')
+
+        assert isinstance(self._gread_meta_data, tuple), (
+            f'Required attribute not a tuple!')
 
         return self._gread_meta_data
 
@@ -373,13 +447,20 @@ class GRead:
         '''
         Returns
         -------
-        NOTE: Works only if a call to read_grib is made before.
+        Time stamps as datetime objects corresponding to each grid of the
+        GRIB data. These are extracted from the metadata which are supposed
+        to be in UTC seconds and then cast as datetime objects.
+
+        Note: Works only if a call to read_grib is made before.
         '''
 
         assert self._gread_read_flag, f'Call read_grib first!'
 
         assert self._gread_time_stamps is not None, (
             f'Required attribute (self._gread_time_stamps) not set!')
+
+        assert isinstance(self._gread_time_stamps, tuple), (
+            f'Required attribute not a tuple!')
 
         return self._gread_time_stamps
 
@@ -388,13 +469,22 @@ class GRead:
         '''
         Returns
         -------
-        NOTE: Works only if a call to read_grib is made before.
+        GRIB data as a np.ndarray in three dimensions. The shape is
+        (time, horizontal coordinates, vertical coordinates). The dtype
+        depends on whatever GDAL read. The size of this array can be
+        significant so it is better to delete the GRead object after it
+        is not required.
+
+        Note: Works only if a call to read_grib is made before.
         '''
 
         assert self._gread_read_flag, f'Call read_grib first!'
 
         assert self._gread_data is not None, (
             f'Required attribute (self._gread_data) not set!')
+
+        assert isinstance(self._gread_data, np.ndarray), (
+            f'Required attribute not a np.ndarray!')
 
         return self._gread_data
 
@@ -403,7 +493,9 @@ class GRead:
         '''
         Returns
         -------
-        NOTE: Works only if a call to read_grib is made before.
+        The numpy dtype of the GRIB data array.
+
+        Note: Works only if a call to read_grib is made before.
         '''
 
         assert self._gread_read_flag, f'Call read_grib first!'
