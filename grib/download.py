@@ -11,6 +11,8 @@ from fnmatch import fnmatch
 import requests
 from bs4 import BeautifulSoup as bs
 
+from ..misc import print_sl, print_el
+
 
 class GDownload:
 
@@ -24,7 +26,10 @@ class GDownload:
     work on those fancy websites where files are shown inside widgets or
     something.
 
-    Last updated on: 2021-Sep-21
+    Take a look at the test/download_grib.py file of this modeule for
+    the intended use case.
+
+    Last updated on: 2021-Sep-22
     '''
 
     def __init__(self, verbose=True):
@@ -55,6 +60,11 @@ class GDownload:
         List of all the names.
         '''
 
+        if self._vb:
+            print_sl()
+
+            print('Getting all file names...')
+
         assert isinstance(url, str), f'url not of the string data type!'
 
         assert len(url), f'Empty url!'
@@ -64,6 +74,10 @@ class GDownload:
         assert isinstance(ext, str), f'ext not of the data type string!'
 
         assert len(ext), f'Empty ext!'
+
+        if self._vb:
+            print(f'URL: {url}')
+            print(f'File extension: {ext}')
 
         soup = bs(requests.get(url).text, features='html.parser')
 
@@ -78,8 +92,14 @@ class GDownload:
 
             names.append(name)
 
+        if self._vb:
+            print(f'Found {len(names)} files.')
+
         assert len(names), (
             f'Could not find any names with the extension {ext} at {url}!')
+
+        if self._vb:
+            print_el()
 
         return names
 
@@ -111,6 +131,11 @@ class GDownload:
             is overwritten regardless.
         '''
 
+        if self._vb:
+            print_sl()
+
+            print('Downloading file...')
+
         assert isinstance(url, str), f'url not of the data type string!'
 
         assert len(url), f'Empty url string!'
@@ -135,6 +160,11 @@ class GDownload:
 
         out_file_path = download_dir / name
 
+        if self._vb:
+            print(f'URL: {url}')
+            print(f'File name: {name}')
+            print(f'Output path: {out_file_path}')
+
         # Used to determine if the file was downloaded and written to
         # completely.
         temp_file_path = download_dir / f'{name}.tmp'
@@ -142,12 +172,27 @@ class GDownload:
         if temp_file_path.exists():
             overwrite_flag = True
 
+            print(
+                f'INFO: Previous attempt to download the file seems '
+                f'to have been unsuccessful. Overwriting the previous file.')
+
         else:
             open(temp_file_path, 'w')
 
         if overwrite_flag or (not out_file_path.exists()):
+            if self._vb:
+                print(f'Downloading...')
+
             req_cont = requests.get(f'{url}{name}', allow_redirects=True)
             open(out_file_path, 'wb').write(req_cont.content)
 
+        else:
+            if self._vb:
+                print('Not downloading.')
+
         temp_file_path.unlink()
+
+        if self._vb:
+            print_el()
+
         return

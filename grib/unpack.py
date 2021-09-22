@@ -17,6 +17,9 @@ class GUnpack:
 
     For now, only bz2 is supported.
 
+    Take a look at the test/unpack_bz2.py file of this modeule for
+    the intended use case.
+
     Last updated on: 2021-Sep-21
     '''
 

@@ -15,6 +15,18 @@ from .settings import GTCSettings as GTCS
 
 class GTCConvert(GR, GTCS):
 
+    '''
+    A class to convert a GRIB file to netCDF4 as it should be.
+
+    The object inherits from other objects so before conversion, all the
+    requirements of the other objects have to be satisifed as well.
+
+    See the convert_grib_to_nc.py file in the test directory of this module
+    to see an example.
+
+    Last updated on: 2021-Sep-21
+    '''
+
     def __init__(self, verbose=True):
 
         GR.__init__(self, verbose)
@@ -25,6 +37,11 @@ class GTCConvert(GR, GTCS):
 
     def verify(self):
 
+        '''
+        Verify that all the inputs have been set correctly. Has to be called
+        after all the inputs and settings are specified.
+        '''
+
         GR._GRead__verify(self)
 
         GTCS._GTCSettings__verify(self)
@@ -34,11 +51,27 @@ class GTCConvert(GR, GTCS):
 
     def convert_to_nc(self, overwrite_flag=False):
 
-        assert self._gread_read_flag
-        assert self._sett_verify_flag
-        assert self._gtcc_verify_flag
+        '''
+        Convert the GRIB file to netCDF4. Should be called after all the
+        get_* methods are called and the grib is read by calling the
+        read_grib method. A temporary file is used to if the last file
+        creation attempt was successful, if made.
 
-        assert isinstance(overwrite_flag, bool)
+        Parameters
+        ----------
+        overwrite_flag : bool
+            Whether to overwrite an existing output file. Should be of the
+            boolean data type. If a previous attempt was made that was
+            unsuccessful, then the flag is force set to True and a new file
+            is created and written to.
+        '''
+
+        assert self._gread_read_flag, f'Call read_grib first!'
+        assert self._sett_verify_flag, f'Call verify first!'
+        assert self._gtcc_verify_flag, f'Call verify first!'
+
+        assert isinstance(overwrite_flag, bool), (
+            f'overwrite_flag not of the boolen data type!')
         #======================================================================
 
         # Used to determine if the file was converted correctly.
@@ -84,12 +117,12 @@ class GTCConvert(GR, GTCS):
         y_coords_grib[:] = self._gread_y_crds_cntrs
 
         x_coords_grib.description = (
-            'Original (rotated) GRIB X coordinates for cell centers.')
+            'Original GRIB X coordinates for cell centers.')
 
         x_coords_grib.crs = self._gread_crs.ExportToWkt()
 
         y_coords_grib.description = (
-            'Original (rotated) GRIB Y coordinates for cell centers.')
+            'Original GRIB Y coordinates for cell centers.')
 
         y_coords_grib.crs = x_coords_grib.crs
         #======================================================================
@@ -150,6 +183,17 @@ class GTCConvert(GR, GTCS):
         time_nc.calendar = self._sett_nc_calendar
         #======================================================================
 
+        keys_to_chk = [
+            'GRIB_ELEMENT', 'GRIB_UNIT', 'GRIB_COMMENT', 'GRIB_SHORT_NAME']
+
+        for key in keys_to_chk:
+            assert all([
+                key in meta_data
+                for meta_data in self._gread_meta_data]), (
+                    f'The key "{key}" missing in at least one '
+                    f'of the time steps in GRIB meta data!')
+        #======================================================================
+
         nc_var = nc_hdl.createVariable(
             self._gread_meta_data[0]['GRIB_ELEMENT'],
             self._gread_dtype,
@@ -176,9 +220,9 @@ class GTCConvert(GR, GTCS):
 
     def _get_crnr_tfmd_crds(self):
 
-        assert self._gread_read_flag
-        assert self._sett_verify_flag
-        assert self._gtcc_verify_flag
+        assert self._gread_read_flag, f'Call read_grib first'
+        assert self._sett_verify_flag, f'Call verify first!'
+        assert self._gtcc_verify_flag, f'Call verify first!'
 
         x_crds_mesh_grib, y_crds_mesh_grib = np.meshgrid(
             self._gread_x_crds_crnrs, self._gread_y_crds_crnrs)
@@ -193,7 +237,8 @@ class GTCConvert(GR, GTCS):
 
         assert (
             np.all(np.isfinite(x_crds_mesh_nc)) and
-            np.all(np.isfinite(y_crds_mesh_nc)))
+            np.all(np.isfinite(y_crds_mesh_nc))), (
+                f'Invalid transformed coordinates!')
 
         return x_crds_mesh_nc, y_crds_mesh_nc
 
