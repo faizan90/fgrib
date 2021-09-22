@@ -176,7 +176,11 @@ class GRead:
         assert grib_hdl is not None, (
             f'Could not open file: {self._gread_path_to_grib} using GDAL!')
 
-        raise Exception('Check if it is a GRIB driver or not!')
+        driver = grib_hdl.GetDriver()
+
+        assert str(driver.ShortName) == 'GRIB', (
+            f'Supplied file seems not to be a GRIB file but of the '
+            f'format: {driver.LongName}, {driver.ShortName}!')
 
         self._gread_handle = grib_hdl
         #======================================================================
@@ -378,7 +382,7 @@ class GRead:
         '''
         Returns
         -------
-        The coordinates system of the GRIB file as a Wkt string.
+        The coordinates system of the GRIB file as a GDAL spatial reference.
         This is needed to reproject the coordinates to another system later.
 
         Note: Works only if a call to read_grib is made before.
@@ -394,8 +398,8 @@ class GRead:
         assert self._gread_crs is not None, (
             f'Required attribute (self._gread_crs) not set!')
 
-        assert isinstance(self._gread_crs, str), (
-            f'Required attribute not a string!')
+        assert isinstance(self._gread_crs, osr.SpatialReference), (
+            f'Required attribute not a GDAL spatial reference!')
 
         if self._vb:
             print_el()
@@ -606,7 +610,7 @@ class GRead:
             f'Required attribute (self._gread_data) not set!')
 
         assert isinstance(self._gread_data, np.ndarray), (
-            f'Required attribute not a np.ndarray!')
+            f'Required attribute (self._gread_data) not a np.ndarray!')
 
         if self._vb:
             print_el()
@@ -632,6 +636,9 @@ class GRead:
 
         assert self._gread_dtype is not None, (
             f'Required attribute (self._gread_dtype) not set!')
+
+        assert isinstance(self._gread_dtype, np.dtype), (
+            f'Required attribute (self._gread_dtype) not a np.dtype!')
 
         if self._vb:
             print_el()

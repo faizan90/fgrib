@@ -23,7 +23,7 @@ def main():
     main_dir = Path(r'P:\Downloads')
     os.chdir(main_dir)
 
-    path_to_input = Path(r'TOT_PRECIP.2D.199501.grb.bz2')
+    path_to_input = Path(r'TOT_PRECIP.2D.199502.grb.bz2')
     path_to_output = path_to_input.with_suffix('')
 
     overwrite_flag = False

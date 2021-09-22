@@ -186,6 +186,9 @@ class GDownload:
             req_cont = requests.get(f'{url}{name}', allow_redirects=True)
             open(out_file_path, 'wb').write(req_cont.content)
 
+            if self._vb:
+                print(f'Done downloading.')
+
         else:
             if self._vb:
                 print('Not downloading.')
