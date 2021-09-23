@@ -9,6 +9,8 @@ import bz2
 import shutil
 from pathlib import Path
 
+from ..misc import print_sl, print_el
+
 
 class GUnpack:
 
@@ -20,7 +22,7 @@ class GUnpack:
     Take a look at the test/unpack_bz2.py file of this modeule for
     the intended use case.
 
-    Last updated on: 2021-Sep-21
+    Last updated on: 2021-Sep-22
     '''
 
     def __init__(self, verbose=True):
@@ -51,8 +53,13 @@ class GUnpack:
             are overwritten regardless.
         '''
 
+        if self._vb:
+            print_sl()
+
+            print('Unpacking BZ2 file...')
+
         assert isinstance(path_to_input, (str, Path)), (
-            f'path_to_input not fo the data type string or Path!')
+            f'path_to_input not of the data type string or Path!')
 
         path_to_input = Path(path_to_input)
 
@@ -72,6 +79,9 @@ class GUnpack:
         assert isinstance(overwrite_flag, bool), (
             f'overwrite_flag not of the boolean data type!')
 
+        print(f'path_to_input:', path_to_input)
+        print(f'path_to_ouput:', path_to_output)
+
         with bz2.BZ2File(path_to_input, 'rb') as f_in:
 
             # Used to determine if the file was unpacked correctly.
@@ -79,6 +89,10 @@ class GUnpack:
                 f'{path_to_output.name}.tmp')
 
             if temp_file_path.exists():
+                print(
+                    f'It seems that the previous attempt to unpack '
+                    f'was unsuccessful. Overwriting previous results.')
+
                 overwrite_flag = True
 
             else:
@@ -87,6 +101,14 @@ class GUnpack:
             if overwrite_flag or (not path_to_output.exists()):
                 with open(path_to_output, 'wb') as f_out:
                         shutil.copyfileobj(f_in, f_out)
+
+                print('Unpacked successfully.')
+
+            else:
+                print('Output exists already.')
+
+            if self._vb:
+                print_el()
 
             temp_file_path.unlink()
         return

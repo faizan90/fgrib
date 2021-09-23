@@ -10,22 +10,66 @@ import numpy as np
 import netCDF4 as nc
 
 from ..grib import GRead as GR
+from ..misc import print_sl, print_el
 from .settings import GTCSettings as GTCS
 
 
 class GTCConvert(GR, GTCS):
 
     '''
-    A class to convert a GRIB file to netCDF4 as it should be.
+    A class to convert a GRIB file to netCDF4, as it should be.
 
     The object inherits from other objects so before conversion, all the
     requirements of the other objects have to be satisifed as well.
 
-    See the convert_grib_to_nc.py file in the test directory of this module
-    to see an example.
+    convert_grib_to_nc.py file in the test directory of this module
+    shows an example.
 
-    Last updated on: 2021-Sep-21
+    Format of the output netCDF4:
+    -----------------------------
+    1. All 3D data from GRIB is written to dataset with the name
+    that is value of the first GRIB_ELEMENT in the metadata.
+    The data dataset has the followiing three attrs.
+    The attribute "units" is the value of GRIB_UNIT.
+    The attribute "standard_name" is the value of GRIB_COMMENT.
+    The attribute "shortname" is the value of GRIB_SHORT_NAME.
+
+    2. The time variable is called "time". It has the supplied calendar
+    and time units.
+
+    3. The cell center X and Y coordinates in the GRIB coordinates system
+    are kept as 1D arrays in the variables "rX" and "rY" respectively.
+    The "r" stands for rotated but this may not be case necessarily.
+
+    4. The cell corner coordinates in the transformed coordinate system
+    (specified by the user) are saved in the variables "X" and "Y" as 2D
+    arrays. Each cell's corners are represented by adjacent X and Y
+    coordinates. The possibilty to use the cell center in the transformed
+    coordinates system is not a choice anymore because the resulting cells
+    won't be square as the GRIB coordinate system. Each cell in the
+    transformed coordinate system will have a different area.
+    Most probably.
+
+    Last updated on: 2021-Sep-23
     '''
+
+    # For 1D variables, having the same name for a netcdf dimension and
+    # a netcdf variable does not create a problem.
+    # It is a problem for 2D though.
+    # I think it's a bug.
+    _sett_nc_x_cntrs_dim_lab = 'rX'
+    _sett_nc_y_cntrs_dim_lab = 'rY'
+
+    _sett_nc_x_cntrs_var_lab = 'rX'
+    _sett_nc_y_cntrs_var_lab = 'rY'
+
+    _sett_nc_x_crnrs_dim_lab = '_X'
+    _sett_nc_y_crnrs_dim_lab = '_Y'
+
+    _sett_nc_x_crnrs_var_lab = 'X'
+    _sett_nc_y_crnrs_var_lab = 'Y'
+
+    _sett_nc_time_lab = 'time'
 
     def __init__(self, verbose=True):
 
@@ -42,11 +86,23 @@ class GTCConvert(GR, GTCS):
         after all the inputs and settings are specified.
         '''
 
+        if self._vb:
+            print_sl()
+
+            print(
+                f'Verifying GRIB to netCDF4 conversion inputs and '
+                f'settings....')
+
         GR._GRead__verify(self)
 
         GTCS._GTCSettings__verify(self)
 
         self._gtcc_verify_flag = True
+
+        if self._vb:
+            print(f'Inputs and settings for conversion OK.')
+            print_el()
+
         return
 
     def convert_to_nc(self, overwrite_flag=False):
@@ -55,7 +111,9 @@ class GTCConvert(GR, GTCS):
         Convert the GRIB file to netCDF4. Should be called after all the
         get_* methods are called and the grib is read by calling the
         read_grib method. A temporary file is used to if the last file
-        creation attempt was successful, if made.
+        creation attempt was successful, if made. This function has
+        two return statements. The format of the output netCDF4 is
+        described in the documentation of this class.
 
         Parameters
         ----------
@@ -65,6 +123,10 @@ class GTCConvert(GR, GTCS):
             unsuccessful, then the flag is force set to True and a new file
             is created and written to.
         '''
+
+        if self._vb:
+            print_sl()
+            print('Converting GRIB to netCDF4...')
 
         assert self._gread_read_flag, f'Call read_grib first!'
         assert self._sett_verify_flag, f'Call verify first!'
@@ -87,6 +149,11 @@ class GTCConvert(GR, GTCS):
         if (not overwrite_flag) and self._sett_path_to_nc.exists():
 
             temp_file_path.unlink()
+
+            if self._vb:
+                print('Output exists already.')
+                print_el()
+
             return
         #======================================================================
 
@@ -216,9 +283,18 @@ class GTCConvert(GR, GTCS):
         #======================================================================
 
         temp_file_path.unlink()
+
+        if self._vb:
+            print('Converted to netCDF4 successfully.')
+            print_el()
+
         return
 
     def _get_crnr_tfmd_crds(self):
+
+        '''
+        Supposed to be called internally only.
+        '''
 
         assert self._gread_read_flag, f'Call read_grib first'
         assert self._sett_verify_flag, f'Call verify first!'

@@ -155,7 +155,7 @@ class GRead:
         self._gread_verify_flag = True
 
         if self._vb:
-            print(f'GRIB read OK.')
+            print(f'GRIB read was OK.')
 
             print_el()
 

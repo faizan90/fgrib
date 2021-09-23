@@ -58,24 +58,6 @@ class GTCSettings:
         'milliseconds',
         'microseconds')
 
-    # For 1D variables, having the same name for a netcdf dimension and
-    # a netcdf variable does not create a problem.
-    # It is a problem for 2D though.
-    # I think it's a bug.
-    _sett_nc_x_cntrs_dim_lab = 'rX'
-    _sett_nc_y_cntrs_dim_lab = 'rY'
-
-    _sett_nc_x_cntrs_var_lab = 'rX'
-    _sett_nc_y_cntrs_var_lab = 'rY'
-
-    _sett_nc_x_crnrs_dim_lab = '_X'
-    _sett_nc_y_crnrs_dim_lab = '_Y'
-
-    _sett_nc_x_crnrs_var_lab = 'X'
-    _sett_nc_y_crnrs_var_lab = 'Y'
-
-    _sett_nc_time_lab = 'time'
-
     def __init__(self, verbose=True):
 
         assert isinstance(verbose, bool)
