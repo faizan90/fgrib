@@ -245,6 +245,8 @@ class GRead:
         meta_data = []
         time_stamps = []
         data = None
+
+        warned_secs = False
         for i in range(band_count):
             band = grib_hdl.GetRasterBand(i + 1)
 
@@ -252,19 +254,38 @@ class GRead:
 
             ref_time_str = band_meta_data['GRIB_REF_TIME']
 
-            parse_res = parse.search(
-                '{time:12d} {unit:w} {ref:w}', ref_time_str)
+            try:
+                parse_res = parse.search(
+                    '{time:12d} {unit:w} {ref:w}', ref_time_str)
 
-            assert parse_res is not None, (
-                f'Could not parse: {ref_time_str} to get time!')
+                assert parse_res is not None, (
+                    f'Could not parse: {ref_time_str} to get time!')
 
-            assert parse_res['unit'] in self._grib_time_units, (
-                f'The key "unit" is not in parse!')
+                assert parse_res['unit'] in self._grib_time_units, (
+                    f'The key "unit" is not in parse!')
 
-            assert parse_res['ref'] in self._grib_time_refs, (
-                f'The key "ref" is not in parse!')
+                assert parse_res['ref'] in self._grib_time_refs, (
+                    f'The key "ref" is not in parse!')
 
-            band_time = datetime.utcfromtimestamp(parse_res['time'])
+                band_time = datetime.utcfromtimestamp(parse_res['time'])
+
+            except:
+                if not warned_secs:
+
+                    print(
+                        'WARNING: Only seconds seem to have been specified '
+                        'in the GRIB_REF_TIME!')
+
+                    warned_secs = True
+
+                parse_res = parse.search('{time:12d}', ref_time_str)
+
+                assert parse_res is not None, (
+                    f'Could not parse: {ref_time_str} to get time!')
+
+                band_time = datetime.utcfromtimestamp(
+                    parse_res['time'] +
+                    int(band_meta_data['GRIB_FORECAST_SECONDS']))
 
             band_data = band.ReadAsArray()
 

@@ -261,15 +261,16 @@ class GTCConvert(GR, GTCS):
                     f'of the time steps in GRIB meta data!')
         #======================================================================
 
+        comp_level = 1
         nc_var = nc_hdl.createVariable(
             self._gread_meta_data[0]['GRIB_ELEMENT'],
             self._gread_dtype,
             fill_value=False,
-            zlib=True,
-            dimensions=(
-                self._sett_nc_time_lab,
-                self._sett_nc_y_cntrs_dim_lab,
-                self._sett_nc_x_cntrs_dim_lab))
+            compression='zlib',
+            complevel=comp_level,
+            chunksizes=(1,
+                        x_coords_nc.shape[0],
+                        x_coords_nc.shape[1]))
 
         nc_var.units = self._gread_meta_data[0]['GRIB_UNIT']
         nc_var.standard_name = self._gread_meta_data[0]['GRIB_COMMENT']
